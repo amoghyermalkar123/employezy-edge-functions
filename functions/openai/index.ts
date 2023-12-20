@@ -1,4 +1,5 @@
 import { CreateCompletionRequest } from "https://esm.sh/openai@3.1.0";
+import { oakCors } from "https://deno.land/x/cors/mod.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -6,7 +7,7 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type"
 };
 
-Deno.serve(async req => {
+const app = Deno.serve(async req => {
   try {
     const { query } = await req.json();
 
@@ -25,7 +26,7 @@ Deno.serve(async req => {
     const res = fetch("https://api.openai.com/v1/completions", {
       method: "POST",
       headers: {
-        ...corsHeaders,
+        "Access-Control-Allow-Origin": "*",
         Authorization: `Bearer ${Deno.env.get("OPENAI_API_KEY")}`,
         "Content-Type": "application/json"
       },
@@ -33,15 +34,24 @@ Deno.serve(async req => {
     });
 
     return new Response(JSON.stringify((await res).body), {
-      headers: { ...corsHeaders, "Content-Type": "application/json" }
+      headers: {
+        "Access-Control-Allow-Origin": "*",
+        "Content-Type": "application/json"
+      }
     });
   } catch (error) {
     return new Response(JSON.stringify({ error: error.message }), {
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
+      headers: {
+        "Access-Control-Allow-Origin": "*",
+        "Content-Type": "application/json"
+      },
       status: 400
     });
   }
 });
+
+// Apply CORS middleware to allow all origins
+app.use(oakCors());
 
 /* To invoke locally:
 
