@@ -19,7 +19,7 @@ Deno.serve(async (req) => {
       'Content-Type': 'application/json',
     },
     body: JSON.stringify(completionConfig),
-  }).then((res) => {})
+  })
 })
 
 /* To invoke locally:
