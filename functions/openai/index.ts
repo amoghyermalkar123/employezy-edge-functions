@@ -1,25 +1,44 @@
 import { CreateCompletionRequest } from 'https://esm.sh/openai@3.1.0'
-import { oakCors } from "https://deno.land/x/cors/mod.ts";
+
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+}
 
 Deno.serve(async (req) => {
-  const { query } = await req.json()
+  try {
+    const { query } = await req.json()
 
-  const completionConfig: CreateCompletionRequest = {
-    model: 'gpt-3.5-turbo-instruct',
-    prompt: query,
-    max_tokens: 256,
-    temperature: 0,
-    stream: false,
+    const completionConfig: CreateCompletionRequest = {
+      model: 'gpt-3.5-turbo-instruct',
+      prompt: query,
+      max_tokens: 256,
+      temperature: 0,
+      stream: false,
+    }
+
+    if (req.method === 'OPTIONS') {
+      return new Response('ok', { headers: corsHeaders })
+    }
+
+    const res = fetch('https://api.openai.com/v1/completions', {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${Deno.env.get('OPENAI_API_KEY')}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(completionConfig),
+    })
+
+    return new Response(JSON.stringify((await res).body), {
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    })
+  } catch (error) {
+    return new Response(JSON.stringify({ error: error.message }), {
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      status: 400,
+    })
   }
-
-  return fetch('https://api.openai.com/v1/completions', {
-    method: 'POST',
-    headers: {
-      Authorization: `Bearer ${Deno.env.get('OPENAI_API_KEY')}`,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify(completionConfig),
-  })
 })
 
 /* To invoke locally:
